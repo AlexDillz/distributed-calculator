@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  calculator-server:
+    build:
+      context: .
+      target: builder
+    image: distributed-calculator:latest
+    container_name: calc-server
+    ports:
+      - "8080:8080"
+    command: ["/server"]
+    volumes:
+      - db_data:/app
+    environment:
+      - DATABASE_PATH=/app/calc.db
+    networks:
+      - calc-network
+
+  calculator-agent:
+    image: distributed-calculator:latest
+    container_name: calc-agent
+    ports:
+      - "50051:50051"
+    command: ["/agent"]
+    depends_on:
+      - calculator-server
+    networks:
+      - calc-network
+    volumes:
+      - db_data:/app
+
+volumes:
+  db_data:
+
+networks:
+  calc-network:
+    driver: bridge

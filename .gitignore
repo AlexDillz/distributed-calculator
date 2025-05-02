@@ -1,0 +1,22 @@
+# Go
+*.exe
+*.log
+*.test
+*.DS_Store
+__debug*
+*.out
+*.pb.go
+*.grpc.pb.go
+
+# IDE
+.idea/
+.vscode/
+.atom/
+*.swp
+
+# Build artifacts
+/bin/
+/dist/
+
+# SQLite DB
+*.db

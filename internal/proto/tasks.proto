@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tasks;
+
+option go_package = "./internal/proto";
+
+service TaskService {
+  rpc ExecuteTask(stream TaskRequest) returns (stream TaskResponse);
+}
+
+message TaskRequest {
+  string expression = 1;
+}
+
+message TaskResponse {
+  double result = 1;
+  string error = 2;
+}
