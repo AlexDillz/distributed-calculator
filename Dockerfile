@@ -1,5 +1,5 @@
 # Базовый образ с Go
-FROM golang:1.22 AS builder
+FROM golang:1.23 AS builder
 
 # Установка зависимостей
 RUN apt-get update && apt-get install -y --no-install-recommends \
