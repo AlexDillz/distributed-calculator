@@ -48,21 +48,28 @@ func tokenize(expr string) ([]string, error) {
 	var num strings.Builder
 
 	for i, ch := range expr {
-		if (ch >= '0' && ch <= '9') || ch == '.' || ch == 'e' || ch == 'E' {
+		if isDigitOrDot(ch) || ch == 'e' || ch == 'E' {
 			num.WriteRune(ch)
+			continue
+		}
+
+		if num.Len() > 0 {
+			tokens = append(tokens, num.String())
+			num.Reset()
+		}
+
+		if ch == '-' && (i == 0 || isStartOfNewTerm(rune(expr[i-1]))) {
+			tokens = append(tokens, "-1")
+			tokens = append(tokens, "*")
+			continue
+		}
+
+		if isOperator(ch) {
+			tokens = append(tokens, string(ch))
+		} else if ch == '(' || ch == ')' {
+			tokens = append(tokens, string(ch))
 		} else {
-			if num.Len() > 0 {
-				tokens = append(tokens, num.String())
-				num.Reset()
-			}
-			if ch == '-' && (i == 0 || expr[i-1] == '(') {
-				tokens = append(tokens, "-1")
-				tokens = append(tokens, "*")
-			} else if strings.ContainsRune("+-*/()", ch) {
-				tokens = append(tokens, string(ch))
-			} else {
-				return nil, ErrInvalidExpression
-			}
+			return nil, ErrInvalidExpression
 		}
 	}
 
@@ -72,21 +79,36 @@ func tokenize(expr string) ([]string, error) {
 	return tokens, nil
 }
 
+func isStartOfNewTerm(ch rune) bool {
+	return ch == '(' || ch == '+' || ch == '-' || ch == '*' || ch == '/'
+}
+
+func isDigitOrDot(ch rune) bool {
+	return (ch >= '0' && ch <= '9') || ch == '.'
+}
+
+func isOperator(ch rune) bool {
+	return ch == '+' || ch == '-' || ch == '*' || ch == '/'
+}
+
 func parseExpression(tokens *[]string) (float64, error) {
 	result, err := parseTerm(tokens)
 	if err != nil {
 		return 0, err
 	}
+
 	for len(*tokens) > 0 {
 		op := (*tokens)[0]
 		if op != "+" && op != "-" {
 			break
 		}
 		*tokens = (*tokens)[1:]
+
 		next, err := parseTerm(tokens)
 		if err != nil {
 			return 0, err
 		}
+
 		if op == "+" {
 			result += next
 		} else {
@@ -101,16 +123,19 @@ func parseTerm(tokens *[]string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	for len(*tokens) > 0 {
 		op := (*tokens)[0]
 		if op != "*" && op != "/" {
 			break
 		}
 		*tokens = (*tokens)[1:]
+
 		next, err := parseFactor(tokens)
 		if err != nil {
 			return 0, err
 		}
+
 		if op == "*" {
 			result *= next
 		} else {
@@ -127,6 +152,7 @@ func parseFactor(tokens *[]string) (float64, error) {
 	if len(*tokens) == 0 {
 		return 0, ErrInvalidExpression
 	}
+
 	token := (*tokens)[0]
 	*tokens = (*tokens)[1:]
 
@@ -135,11 +161,23 @@ func parseFactor(tokens *[]string) (float64, error) {
 		if err != nil {
 			return 0, err
 		}
+
 		if len(*tokens) == 0 || (*tokens)[0] != ")" {
 			return 0, ErrInvalidExpression
 		}
 		*tokens = (*tokens)[1:]
 		return result, nil
+	}
+
+	if strings.HasPrefix(token, "-") {
+		if len(token) == 1 {
+			return 0, ErrInvalidExpression
+		}
+		value, err := strconv.ParseFloat(token, 64)
+		if err != nil {
+			return 0, ErrInvalidExpression
+		}
+		return value, nil
 	}
 
 	value, err := strconv.ParseFloat(token, 64)

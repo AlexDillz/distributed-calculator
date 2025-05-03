@@ -16,6 +16,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/register", server.RegisterHandler(store))
+	mux.HandleFunc("POST /api/v1/calculate", server.CalculateHandler(store))
 	mux.HandleFunc("POST /api/v1/login", server.LoginHandler(store))
 
 	log.Println("Server started at :8080")
