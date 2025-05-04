@@ -1,24 +1,29 @@
 package main
 
 import (
-	"log"
 	"net"
 
 	"github.com/AlexDillz/distributed-calculator/internal/agent"
+	"github.com/AlexDillz/distributed-calculator/internal/config"
 	pb "github.com/AlexDillz/distributed-calculator/internal/proto"
+	"github.com/AlexDillz/distributed-calculator/pkg/logging"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":50051")
+	cfg := config.Load()
+
+	logging.InitLogger()
+	logger := logging.GetLogger()
+
+	lis, err := net.Listen("tcp", cfg.GRPCPort)
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatalf("Failed to listen: %v", err)
 	}
 
-	srv := grpc.NewServer()
-	pb.RegisterTaskServiceServer(srv, &agent.Agent{})
-	log.Println("Agent is running on :50051")
-	if err := srv.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	grpcServer := grpc.NewServer()
+	pb.RegisterTaskServiceServer(grpcServer, &agent.Agent{})
+
+	logger.Printf("Agent gRPC Server running on %s\n", cfg.GRPCPort)
+	grpcServer.Serve(lis)
 }

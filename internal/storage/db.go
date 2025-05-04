@@ -8,6 +8,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var ErrNotFound = errors.New("not found")
+
 type Storage struct {
 	db *sql.DB
 }
@@ -18,7 +20,6 @@ func NewStorage(path string) (*Storage, error) {
 		return nil, fmt.Errorf("failed to open DB: %v", err)
 	}
 
-	// Создаем таблицы
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         login TEXT UNIQUE,
@@ -41,22 +42,6 @@ func NewStorage(path string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) SaveExpression(userID int, expr string, result float64, errStr string) error {
-	_, e := s.db.Exec("INSERT INTO expressions (user_id, expression, result, error) VALUES (?, ?, ?, ?)",
-		userID, expr, result, errStr)
-	return e
-}
-
-func (s *Storage) GetUserByLogin(login string) (*User, error) {
-	var user User
-	row := s.db.QueryRow("SELECT id, login, password FROM users WHERE login = ?", login)
-	err := row.Scan(&user.ID, &user.Login, &user.Password)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
 func (s *Storage) RegisterUser(login, password string) error {
 	_, err := s.db.Exec("INSERT INTO users (login, password) VALUES (?, ?)", login, password)
 	if err != nil {
@@ -65,20 +50,57 @@ func (s *Storage) RegisterUser(login, password string) error {
 	return nil
 }
 
+func (s *Storage) GetUserByLogin(login string) (*User, error) {
+	var u User
+	row := s.db.QueryRow("SELECT id, login, password FROM users WHERE login = ?", login)
+	if err := row.Scan(&u.ID, &u.Login, &u.Password); err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *Storage) SaveExpression(userID int, expr string, result float64, errStr string) error {
+	_, err := s.db.Exec(
+		"INSERT INTO expressions (user_id, expression, result, error) VALUES (?, ?, ?, ?)",
+		userID, expr, result, errStr,
+	)
+	return err
+}
+
 func (s *Storage) ListExpressions(userID int) ([]*Expression, error) {
-	rows, err := s.db.Query("SELECT id, expression, result, error FROM expressions WHERE user_id = ?", userID)
+	rows, err := s.db.Query(
+		"SELECT id, expression, result, error FROM expressions WHERE user_id = ? ORDER BY id",
+		userID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var exprs []*Expression
+	var list []*Expression
 	for rows.Next() {
 		e := &Expression{UserID: userID}
 		if err := rows.Scan(&e.ID, &e.Expression, &e.Result, &e.Error); err != nil {
 			return nil, err
 		}
-		exprs = append(exprs, e)
+		list = append(list, e)
 	}
-	return exprs, nil
+	return list, nil
+}
+
+func (s *Storage) GetExpression(userID, exprID int) (*Expression, error) {
+	row := s.db.QueryRow(
+		"SELECT id, expression, result, error FROM expressions WHERE user_id = ? AND id = ?",
+		userID, exprID,
+	)
+
+	var e Expression
+	e.UserID = userID
+	if err := row.Scan(&e.ID, &e.Expression, &e.Result, &e.Error); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &e, nil
 }
