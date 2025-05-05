@@ -14,6 +14,7 @@ services:
       - db_data:/app
     environment:
       - DATABASE_PATH=/app/calc.db
+    restart: unless-stopped
     networks:
       - calc-network
 
@@ -25,6 +26,7 @@ services:
     command: ["/agent"]
     depends_on:
       - calculator-server
+    restart: unless-stopped
     networks:
       - calc-network
     volumes:

@@ -3,38 +3,41 @@ BINARY_AGENT=agent
 DOCKER_IMAGE=distributed-calculator:latest
 
 build:
-    docker build -t $(DOCKER_IMAGE) .
+	docker build -t $(DOCKER_IMAGE) .
 
 up:
-    docker-compose up -d
+	docker-compose up -d
 
 down:
-    docker-compose down
+	docker-compose down
 
 restart:
-    $(MAKE) down
-    $(MAKE) up
+	$(MAKE) down
+	$(MAKE) up
 
 logs:
-    docker logs calc-server
-    docker logs calc-agent
+	docker logs calc-server
+	docker logs calc-agent
 
 test:
-    go test ./internal/server/... ./internal/agent/... ./pkg/...
+	go test ./internal/server/... ./internal/agent/... ./pkg/...
 
 clean:
-    rm -f /tmp/$(BINARY_SERVER) /tmp/$(BINARY_AGENT)
+	rm -f /tmp/$(BINARY_SERVER) /tmp/$(BINARY_AGENT)
 
 fmt:
-    go fmt ./...
+	go fmt ./...
 
 tidy:
-    go mod tidy
+	go mod tidy
+
+proto:
+	protoc --go_out=. --go-grpc_out=. internal/proto/tasks.proto
 
 rebuild:
-    $(MAKE) down
-    $(MAKE) clean
-    $(MAKE) build
-    $(MAKE) up
+	$(MAKE) down
+	$(MAKE) clean
+	$(MAKE) build
+	$(MAKE) up
 
-.PHONY: build up down restart logs test fmt tidy rebuild
+.PHONY: build up down restart logs test fmt tidy rebuild proto clean
