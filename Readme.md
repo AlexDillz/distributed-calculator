@@ -33,7 +33,7 @@
 
 ---
 
-## 🏗 Архитектура
+## Архитектура
 
 +-----------+ HTTP +-----------------+ gRPC +---------+
 | Клиент | <----------> | Orchestrator | <---------> | Agent |
@@ -69,119 +69,88 @@ cd distributed-calculator
 Локальный запуск без Docker
 Сборка proto (если меняли .proto):
 
-bash
-Копировать
-Редактировать
 make proto
+
 Запуск Orchestrator:
 
-bash
-Копировать
-Редактировать
 DATABASE_PATH=./calc.db GRPC_PORT=:50051 HTTP_PORT=:8080 go run cmd/server/main.go
+
 Запуск Agent (в другом терминале):
 
-bash
-Копировать
-Редактировать
 GRPC_PORT=:50051 COMPUTING_POWER=4 go run cmd/agent/main.go
 COMPUTING_POWER — число параллельных воркеров (горутин).
 
-🐳 Запуск через Docker & Docker-Compose
+Запуск через Docker & Docker-Compose
 Сборка образа:
 
-bash
-Копировать
-Редактировать
 make build
+
 Поднять сервисы:
 
-bash
-Копировать
-Редактировать
 make up
+
 Или напрямую:
 
-bash
-Копировать
-Редактировать
 docker-compose up --build -d
+
 Просмотр логов:
 
-bash
-Копировать
-Редактировать
 make logs
+
 Остановка и очистка:
 
-bash
-Копировать
-Редактировать
 make down
-🔧 Environment Variables
-Переменная	Описание	По умолчанию
-DATABASE_PATH	Путь к файлу SQLite DB	calc.db
-GRPC_PORT	Порт для gRPC сервера агента	:50051
-HTTP_PORT	Порт для HTTP сервера Orchestrator	:8080
-COMPUTING_POWER	Количество горутин в Agent	1
-JWT_SECRET	Секрет для подписи JWT	secret_key
 
-📡 Примеры запросов (curl)
+Environment Variables
+
+Переменная	      Описание	                            По умолчанию
+
+DATABASE_PATH	   Путь к файлу SQLite DB	             calc.db
+GRPC_PORT	      Порт для gRPC сервера агента	       :50051
+HTTP_PORT	      Порт для HTTP сервера Orchestrator	 :8080
+COMPUTING_POWER	Количество горутин в Agent	          1
+JWT_SECRET	      Секрет для подписи JWT	             secret_key
+
+Примеры запросов (curl)
 1. Регистрация
-bash
-Копировать
-Редактировать
+
 curl -i -X POST http://localhost:8080/api/v1/register \
   -H "Content-Type: application/json" \
   -d '{"login":"user1","password":"pass123"}'
-Ответ:
 
-Копировать
-Редактировать
+Ответ:
 HTTP/1.1 200 OK
 OK
+
 2. Логин
-bash
-Копировать
-Редактировать
+
 curl -i -X POST http://localhost:8080/api/v1/login \
   -H "Content-Type: application/json" \
   -d '{"login":"user1","password":"pass123"}'
-Ответ:
 
-json
-Копировать
-Редактировать
+Ответ:
 HTTP/1.1 200 OK
 {
   "token": "<ваш_JWT_токен>"
 }
+
 3. Вычисление выражения
-bash
-Копировать
-Редактировать
+
 curl -i -X POST http://localhost:8080/api/v1/calculate \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <TOKEN>" \
   -d '{"expression":"2+2*2"}'
-Ответ:
 
-json
-Копировать
-Редактировать
+Ответ:
 HTTP/1.1 200 OK
 {"result":6}
+
 4. Список всех выражений
-bash
-Копировать
-Редактировать
+
 curl -i -X GET http://localhost:8080/api/v1/expressions \
   -H "Authorization: Bearer <TOKEN>"
-Ответ:
 
-json
-Копировать
-Редактировать
+Ответ:
 HTTP/1.1 200 OK
 {
   "expressions":[
@@ -189,56 +158,46 @@ HTTP/1.1 200 OK
     {"id":2,"status":"error","result":0}
   ]
 }
+
 5. Детали конкретного выражения
-bash
-Копировать
-Редактировать
+
 curl -i -X GET http://localhost:8080/api/v1/expressions/1 \
   -H "Authorization: Bearer <TOKEN>"
+
 Ответ:
 
-json
-Копировать
-Редактировать
 HTTP/1.1 200 OK
 {
   "expression":{"id":1,"status":"done","result":6}
 }
-📬 Примеры в Postman
-Создайте коллекцию Distributed Calculator.
 
+Примеры в Postman
+
+Создайте коллекцию Distributed Calculator.
 Добавьте Request Register:
 
 Method: POST
-
 URL: {{baseUrl}}/api/v1/register
-
 Body → raw JSON { "login":"user1","password":"pass123" }
 
 Добавьте Request Login:
 
 Method: POST
-
 URL: {{baseUrl}}/api/v1/login
-
 Body → raw JSON { "login":"user1","password":"pass123" }
 
 Tests:
 
-js
-Копировать
-Редактировать
 pm.environment.set("jwt", pm.response.json().token);
+
+
 Добавьте Request Calculate:
 
 Method: POST
-
 URL: {{baseUrl}}/api/v1/calculate
 
 Headers:
-
 Authorization: Bearer {{jwt}}
-
 Content-Type: application/json
 
 Body: { "expression":"2+2*2" }
@@ -246,38 +205,26 @@ Body: { "expression":"2+2*2" }
 Request ListExpressions:
 
 Method: GET
-
 URL: {{baseUrl}}/api/v1/expressions
-
 Header: Authorization: Bearer {{jwt}}
 
 Request GetExpressionById:
 
 Method: GET
-
 URL: {{baseUrl}}/api/v1/expressions/1
-
 Header: Authorization: Bearer {{jwt}}
 
 В переменных окружения (Environments) задайте:
 
-text
-Копировать
-Редактировать
 baseUrl = http://localhost:8080
-✅ Тестирование
+
+Тестирование
 Unit-тесты:
 
-bash
-Копировать
-Редактировать
 go test ./pkg/calculation
 go test ./internal/storage
 go test ./internal/agent
 go test ./internal/server
-Integration-тесты:
 
-bash
-Копировать
-Редактировать
+Integration-тесты:
 go test ./tests/integration
